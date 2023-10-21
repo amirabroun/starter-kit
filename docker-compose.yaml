@@ -40,33 +40,6 @@ services:
       retries: 3
       timeout: 5s
 
-  postgres:
-    image: "${POSTGRES_IMAGE}"
-    container_name: "${POSTGRES_CONTAINER_NAME}"
-    hostname: "${POSTGRES_HOSTNAME}"
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: '${POSTGRES_DATABASE}'
-      PGPASSWORD: '${POSTGRES_PASSWORD:-secret}'
-      TZ: "${TZ}"
-    volumes:
-      - ./storage/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready",
-          "-q",
-          "-d",
-          "${POSTGRES_DATABASE}",
-          "-U",
-          "${POSTGRES_USER}"
-        ]
-      retries: 3
-      timeout: 5s
-
   redis:
     image: "${REDIS_IMAGE}"
     container_name: "${REDIS_CONTAINER_NAME}"
@@ -86,14 +59,17 @@ services:
     image: "${MINIO_IMAGE}"
     container_name: "${MINIO_CONTAINER_NAME}"
     hostname: "${MINIO_HOSTNAME_NAME}"
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       TZ: '${TZ}'
-      MINIO_BROWSER_REDIRECT_URL: https://minio.codespaces.ir/
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./storage/minio:/data/minio
-    command: minio server /data/minio --console-address ":80"
+    command: minio server /data/minio --console-address ":9001"
     healthcheck:
       test:
         [
@@ -113,20 +89,8 @@ services:
     environment:
       PMA_HOST: "${MARIADB_HOSTNAME}"
       PMA_PMADB: phpmyadmin
-      UPLOAD_LIMIT: 300m
+      UPLOAD_LIMIT: 30000m
       TZ: "${TZ}"
-
-  pgadmin:
-    image: "${PGADMIN_IMAGE}"
-    container_name: "${PGADMIN_CONTAINER_NAME}"
-    hostname: "${PGADMIN_HOSTNAME}"
-    restart: unless-stopped
-    environment:
-      TZ: '${TZ}'
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-    volumes:
-      - ./storage/pgadmin:/var/lib/pgadmin
 
   meilisearch:
     image: "${MEILISEARCH_IMAGE}"
@@ -161,15 +125,6 @@ services:
       MH_UI_BIND_ADDR: 0.0.0.0:80
     volumes:
       - ./storage/mailhog:/home/mailhog
-
-  selenium:
-    image: "${SELENIUM_IMAGE}"
-    container_name: "${SELENIUM_CONTAINER_NAME}"
-    hostname: "${SELENIUM_HOSTNAME}"
-    environment:
-      TZ: '${TZ}'
-    volumes:
-      - ./storage/selenium:/dev/shm
 
 networks:
   default:
